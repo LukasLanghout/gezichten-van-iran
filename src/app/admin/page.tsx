@@ -1,12 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import AdminActions from './AdminActions'
 
 export default async function AdminPage() {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/admin/login')
 
   const [{ data: pending }, { data: approved }, { count: scanCount }] = await Promise.all([
     supabase.from('stories').select('*').eq('status', 'pending').order('created_at', { ascending: false }),

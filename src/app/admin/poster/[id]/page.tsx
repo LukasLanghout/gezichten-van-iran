@@ -5,13 +5,11 @@ import PosterPreview from './PosterPreview'
 export default async function PosterPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/admin/login')
 
   const { data: story } = await supabase.from('stories').select('*').eq('id', id).single()
   if (!story) redirect('/admin')
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gezichten-van-iran.vercel.app'
   const storyUrl = `${siteUrl}/verhaal/${id}`
 
   return (
