@@ -1,6 +1,8 @@
-import { createServerClient, type CookieMethodsServer } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+
+type CookieToSet = { name: string; value: string; options?: object }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -11,8 +13,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     {
       cookies: {
         getAll() { return cookieStore.getAll() },
-        setAll(cookiesToSet: Parameters<CookieMethodsServer['setAll']>[0]) {
-          try { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)) } catch {}
+        setAll(cookiesToSet: CookieToSet[]) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          try { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options as any)) } catch {}
         },
       },
     }
