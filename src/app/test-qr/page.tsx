@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export default async function TestQRPage() {
   const supabase = createClient()
-  await supabase.from('qr_scans').insert({ scanned_at: new Date().toISOString() })
+  await supabase.from('qr_scans').insert({ source: 'test-qr' })
 
   return (
     <main className="min-h-screen bg-background flex items-center justify-center p-8">
