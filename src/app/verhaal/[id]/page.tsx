@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Nav from '@/components/Nav'
 import Image from 'next/image'
 import MessageModal from './MessageModal'
+import Chat from '@/components/Chat'
 import { notFound } from 'next/navigation'
 
 export default async function VerhaalPage({ params }: { params: Promise<{ id: string }> }) {
@@ -9,6 +10,8 @@ export default async function VerhaalPage({ params }: { params: Promise<{ id: st
   const supabase = createClient()
   const { data: story } = await supabase.from('stories').select('*').eq('id', id).single()
   if (!story) notFound()
+
+  const storyPath = `/verhaal/${id}`
 
   return (
     <>
@@ -25,6 +28,7 @@ export default async function VerhaalPage({ params }: { params: Promise<{ id: st
         <h1 className="font-serif text-4xl font-bold mb-6">{story.first_name}</h1>
         <p className="text-lg leading-relaxed whitespace-pre-wrap mb-10">{story.story_text}</p>
         <MessageModal storyId={story.id} />
+        <Chat storyId={story.id} storyPath={storyPath} />
       </main>
     </>
   )
