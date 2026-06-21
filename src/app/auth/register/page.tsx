@@ -20,14 +20,22 @@ function RegisterForm() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { name } },
+
+    // Create user server-side (auto-confirmed, no email required)
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, name }),
     })
-    if (error) { setError(error.message); setLoading(false) }
-    else router.push(next)
+    const data = await res.json()
+    if (!res.ok) { setError(data.error); setLoading(false); return }
+
+    // Sign in immediately after
+    const supabase = createClient()
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+    if (signInError) { setError(signInError.message); setLoading(false); return }
+
+    router.push(next)
   }
 
   return (
@@ -36,13 +44,41 @@ function RegisterForm() {
       <main className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="w-full max-w-sm">
           <h1 className="font-serif text-3xl font-bold mb-2">Account aanmaken</h1>
-          <p className="text-charcoal/60 mb-8 text-sm">Al een account? <Link href={`/auth/login?next=${encodeURIComponent(next)}`} className="text-terracotta hover:underline">Log hier in</Link></p>
+          <p className="text-charcoal/60 mb-8 text-sm">
+            Al een account?{' '}
+            <Link href={`/auth/login?next=${encodeURIComponent(next)}`} className="text-terracotta hover:underline">Log hier in</Link>
+          </p>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <input required value={name} onChange={e => setName(e.target.value)} placeholder="Jouw naam" className="w-full border border-charcoal/20 px-3 py-2 bg-white" />
-            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="E-mailadres" className="w-full border border-charcoal/20 px-3 py-2 bg-white" />
-            <input type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} placeholder="Wachtwoord (min. 6 tekens)" className="w-full border border-charcoal/20 px-3 py-2 bg-white" />
+            <input
+              required
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Jouw naam"
+              className="w-full border border-charcoal/20 px-3 py-2 bg-white"
+            />
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="E-mailadres"
+              className="w-full border border-charcoal/20 px-3 py-2 bg-white"
+            />
+            <input
+              type="password"
+              required
+              minLength={6}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Wachtwoord (min. 6 tekens)"
+              className="w-full border border-charcoal/20 px-3 py-2 bg-white"
+            />
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button type="submit" disabled={loading} className="w-full bg-terracotta text-white py-2 font-semibold hover:bg-terracotta/90 disabled:opacity-50">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-terracotta text-white py-2 font-semibold hover:bg-terracotta/90 disabled:opacity-50"
+            >
               {loading ? 'Bezig...' : 'Account aanmaken'}
             </button>
           </form>
