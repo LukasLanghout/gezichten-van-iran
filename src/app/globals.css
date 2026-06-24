@@ -48,6 +48,54 @@ body::before {
   background: rgba(28,28,28,0.32);
 }
 
+/* ─── 3D flip card ─── */
+.flip-scene {
+  perspective: 1200px;
+}
+.flip-inner {
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+.flip-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+.flip-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.flip-face-back {
+  transform: rotateY(180deg);
+}
+
+/* Floating portrait animation */
+@keyframes float-portrait {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50%       { transform: translateY(-10px) scale(1.01); }
+}
+.animate-float {
+  animation: float-portrait 5s ease-in-out infinite;
+}
+
+/* Letter paper lines */
+.letter-lines {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent calc(1.85rem - 1px),
+    rgba(28,28,28,0.07) calc(1.85rem - 1px),
+    rgba(28,28,28,0.07) 1.85rem
+  );
+  background-size: 100% 1.85rem;
+}
+
+/* Child letter handwriting feel */
+.handwritten {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  line-height: 1.9;
+}
+
 @layer components {
   /* Editorial drop cap for long-form story text */
   .dropcap::first-letter {

@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import AuthButton from './AuthButton'
-import GroupsNavLink from './GroupsNavLink'
 
 export default function Nav() {
   return (
@@ -17,20 +16,17 @@ export default function Nav() {
 
         <div className="flex items-center gap-1 text-sm sm:gap-2">
           <Link
-            href="/"
-            className="hidden rounded-full px-3 py-1.5 transition-colors hover:bg-charcoal/5 hover:text-terracotta sm:block"
-          >
-            Home
-          </Link>
-          <Link
             href="/verhalen"
             className="rounded-full px-3 py-1.5 transition-colors hover:bg-charcoal/5 hover:text-terracotta"
           >
             Verhalen
           </Link>
-          <span className="rounded-full px-3 py-1.5 transition-colors hover:bg-charcoal/5">
-            <GroupsNavLink />
-          </span>
+          <Link
+            href="/groepen"
+            className="rounded-full px-3 py-1.5 transition-colors hover:bg-charcoal/5 hover:text-terracotta"
+          >
+            Community
+          </Link>
           <Link
             href="/deel"
             className="ml-1 hidden rounded-full bg-terracotta px-4 py-1.5 font-semibold text-white shadow-soft transition-all hover:-translate-y-0.5 hover:bg-terracotta-dark sm:inline-block"
