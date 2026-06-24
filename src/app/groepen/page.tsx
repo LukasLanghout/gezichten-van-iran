@@ -29,7 +29,7 @@ export default function GroepenPage() {
         </p>
 
         <a
-          href="https://signal.group/#VERVANG_MET_ECHTE_LINK"
+          href="https://signal.group/#CjQKIFKY5-4DmnxNcU-pBvfJ-Ap_FlToRTBtjdskjug6pJ7pEhDhOTGes1SqJb6LthruQUGZ"
           target="_blank"
           rel="noopener noreferrer"
           className="mt-10 inline-flex items-center gap-3 rounded-full bg-[#3A76F0] px-8 py-4 text-base font-semibold text-white shadow-soft transition-all hover:-translate-y-0.5 hover:bg-[#2d5fc9]"
