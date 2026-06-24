@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import InviteToGroupModal from './InviteToGroupModal'
+import Avatar from './Avatar'
 import type { User } from '@supabase/supabase-js'
 
 interface Message {
@@ -11,6 +12,16 @@ interface Message {
   display_name: string
   content: string
   created_at: string
+}
+
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime()
+  const m = Math.floor(diff / 60000)
+  if (m < 1) return 'nu'
+  if (m < 60) return `${m} min`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h} uur`
+  return `${Math.floor(h / 24)} d`
 }
 
 export default function Chat({ storyId, storyPath }: { storyId: string; storyPath: string }) {
@@ -74,30 +85,53 @@ export default function Chat({ storyId, storyPath }: { storyId: string; storyPat
   }
 
   return (
-    <div className="mt-16 border-t border-charcoal/10 pt-10">
-      <h2 className="font-serif text-2xl font-bold mb-6">Gesprek</h2>
-
-      <div className="space-y-5 mb-6 max-h-96 overflow-y-auto pr-2">
-        {messages.length === 0 && (
-          <p className="text-charcoal/40 text-sm">Nog geen berichten. Wees de eerste!</p>
+    <div className="mt-14 rounded-3xl border border-charcoal/5 bg-paper p-6 shadow-card md:p-8">
+      <div className="mb-6 flex items-center gap-3">
+        <h2 className="font-serif text-2xl font-bold">Gesprek</h2>
+        {messages.length > 0 && (
+          <span className="rounded-full bg-terracotta/10 px-2.5 py-0.5 text-xs font-semibold text-terracotta">
+            {messages.length}
+          </span>
         )}
-        {messages.map(msg => (
-          <div key={msg.id}>
-            {/* Name row — clickable to invite */}
-            <div className="flex items-baseline gap-2 mb-1">
-              <button
-                onClick={() => setInvite({ userId: msg.user_id, displayName: msg.display_name })}
-                className={`font-semibold text-sm hover:underline cursor-pointer ${
-                  user && msg.user_id === user.id ? 'text-terracotta' : 'text-charcoal'
-                }`}
-                title="Uitnodigen voor groep"
-              >
-                {msg.display_name}
-              </button>
-            </div>
-            <p className="text-sm text-charcoal leading-relaxed">{msg.content}</p>
+      </div>
+
+      <div className="mb-6 max-h-[28rem] space-y-4 overflow-y-auto pr-1">
+        {messages.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-charcoal/15 py-10 text-center">
+            <p className="text-sm text-charcoal/45">Nog geen berichten. Wees de eerste!</p>
           </div>
-        ))}
+        )}
+        {messages.map(msg => {
+          const own = !!user && msg.user_id === user.id
+          return (
+            <div key={msg.id} className={`flex animate-fade-in gap-3 ${own ? 'flex-row-reverse' : ''}`}>
+              <Avatar name={msg.display_name} size={36} />
+              <div className={`max-w-[80%] ${own ? 'items-end text-right' : ''} flex flex-col`}>
+                <div className={`mb-1 flex items-baseline gap-2 ${own ? 'flex-row-reverse' : ''}`}>
+                  <button
+                    onClick={() => setInvite({ userId: msg.user_id, displayName: msg.display_name })}
+                    className={`text-sm font-semibold transition-colors hover:underline ${
+                      own ? 'text-terracotta' : 'text-charcoal hover:text-terracotta'
+                    }`}
+                    title="Uitnodigen voor groep"
+                  >
+                    {msg.display_name}
+                  </button>
+                  <span className="text-[11px] text-charcoal/35">{timeAgo(msg.created_at)}</span>
+                </div>
+                <div
+                  className={`inline-block rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                    own
+                      ? 'rounded-tr-sm bg-terracotta text-white'
+                      : 'rounded-tl-sm bg-sand text-ink'
+                  }`}
+                >
+                  {msg.content}
+                </div>
+              </div>
+            </div>
+          )
+        })}
         <div ref={bottomRef} />
       </div>
 
@@ -107,25 +141,25 @@ export default function Chat({ storyId, storyPath }: { storyId: string; storyPat
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder="Schrijf een bericht..."
-            className="flex-1 border border-charcoal/20 px-3 py-2 bg-white text-sm"
+            className="field flex-1 rounded-full"
             maxLength={500}
           />
           <button
             type="submit"
             disabled={sending || !input.trim()}
-            className="bg-terracotta text-white px-5 py-2 text-sm font-semibold hover:bg-terracotta/90 disabled:opacity-40"
+            className="btn-primary px-6 py-2.5 text-sm"
           >
             Sturen
           </button>
         </form>
       ) : (
-        <div className="bg-white p-5 rounded-sm shadow-sm text-center">
-          <p className="text-charcoal/70 mb-3">Log in om mee te praten in het gesprek.</p>
-          <div className="flex gap-3 justify-center">
-            <Link href={`/auth/login?next=${encodeURIComponent(storyPath)}`} className="bg-terracotta text-white px-5 py-2 text-sm font-semibold hover:bg-terracotta/90">
+        <div className="rounded-2xl bg-sand/60 p-6 text-center">
+          <p className="mb-4 text-charcoal/70">Log in om mee te praten in het gesprek.</p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link href={`/auth/login?next=${encodeURIComponent(storyPath)}`} className="btn-primary px-6 py-2.5 text-sm">
               Inloggen
             </Link>
-            <Link href={`/auth/register?next=${encodeURIComponent(storyPath)}`} className="border border-charcoal/20 px-5 py-2 text-sm hover:border-terracotta">
+            <Link href={`/auth/register?next=${encodeURIComponent(storyPath)}`} className="btn-ghost px-6 py-2.5 text-sm">
               Account aanmaken
             </Link>
           </div>

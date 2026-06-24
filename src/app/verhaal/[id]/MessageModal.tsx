@@ -21,29 +21,37 @@ export default function MessageModal({ storyId }: { storyId: string }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="bg-terracotta text-white px-6 py-3 font-semibold hover:bg-terracotta/90 transition-colors"
+        className="btn-primary px-6 py-3"
       >
-        Stuur een bericht
+        Stuur een privébericht ✉
       </button>
       {open && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-background max-w-md w-full p-6 rounded-sm">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/50 p-4 backdrop-blur-sm"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="w-full max-w-md animate-scale-in rounded-3xl bg-paper p-7 shadow-soft"
+            onClick={e => e.stopPropagation()}
+          >
             {sent ? (
-              <div>
-                <h2 className="font-serif text-2xl mb-4">Bedankt!</h2>
-                <p className="text-charcoal/70 mb-4">Je bericht is ontvangen.</p>
-                <button onClick={() => { setOpen(false); setSent(false) }} className="text-terracotta font-semibold">Sluiten</button>
+              <div className="text-center">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-terracotta/10 text-2xl">✓</div>
+                <h2 className="font-serif text-2xl font-bold">Bedankt!</h2>
+                <p className="mt-2 text-charcoal/70">Je bericht is ontvangen.</p>
+                <button onClick={() => { setOpen(false); setSent(false) }} className="btn-primary mt-6 px-6 py-2.5 text-sm">Sluiten</button>
               </div>
             ) : (
               <>
-                <h2 className="font-serif text-2xl mb-6">Stuur een bericht</h2>
+                <h2 className="mb-1 font-serif text-2xl font-bold">Stuur een bericht</h2>
+                <p className="mb-6 text-sm text-charcoal/55">Een persoonlijk bericht aan de verteller.</p>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <input
                     required
                     value={name}
                     onChange={e => setName(e.target.value)}
                     placeholder="Jouw naam"
-                    className="w-full border border-charcoal/20 px-3 py-2 bg-white"
+                    className="field"
                   />
                   <textarea
                     required
@@ -51,11 +59,11 @@ export default function MessageModal({ storyId }: { storyId: string }) {
                     onChange={e => setMessage(e.target.value)}
                     placeholder="Jouw bericht..."
                     rows={4}
-                    className="w-full border border-charcoal/20 px-3 py-2 bg-white resize-none"
+                    className="field resize-none"
                   />
                   <div className="flex gap-3">
-                    <button type="submit" className="bg-terracotta text-white px-5 py-2 font-semibold hover:bg-terracotta/90">Versturen</button>
-                    <button type="button" onClick={() => setOpen(false)} className="px-5 py-2 border border-charcoal/20 hover:border-charcoal">Annuleren</button>
+                    <button type="submit" className="btn-primary px-6 py-2.5 text-sm">Versturen</button>
+                    <button type="button" onClick={() => setOpen(false)} className="btn-ghost px-6 py-2.5 text-sm">Annuleren</button>
                   </div>
                 </form>
               </>
