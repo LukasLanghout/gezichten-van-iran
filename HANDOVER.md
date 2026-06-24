@@ -12,15 +12,16 @@
 8. [Omgevingsvariabelen](#omgevingsvariabelen)
 9. [Lokaal opstarten](#lokaal-opstarten)
 10. [Beheerderspaneel](#beheerderspaneel)
-11. [Mogelijke uitbreidingen](#mogelijke-uitbreidingen)
+11. [Slapende code (voor later)](#slapende-code-voor-later)
+12. [Mogelijke uitbreidingen](#mogelijke-uitbreidingen)
 
 ---
 
 ## Wat is dit project?
 
-**Gezichten van Iran** is een Nederlandse storytelling-webapp waarop mensen persoonlijke verhalen delen over het Iran-conflict. Fysieke posters in bushokjes hebben een QR-code die verwijst naar de site. Bezoekers lezen verhalen, reageren via chat, nodigen elkaar uit in groepen en delen zelf verhalen.
+**Gezichten van Iran** is een Nederlandse storytelling-webapp waarop mensen persoonlijke verhalen delen over het Iran-conflict. Fysieke posters in bushokjes hebben een QR-code die verwijst naar de site.
 
-Het project is gebouwd als prototype / MVP — geen e-mailverificatie, geen betalingen, geen complexe rechtenstructuur. Het doel is snel tonen hoe zoiets werkt.
+De homepage toont geanimeerde portretkaarten. Als je op een kaart klikt, draait hij om en zie je de brief (het verhaal) van die persoon. Eronder staat een link naar het volledige overzicht. Op de verhaaldetailpagina staat het portret met animatie, de brief op gelinieerd papier, en eronder een handgeschreven brief van een kind.
 
 ---
 
@@ -56,7 +57,7 @@ clay        #E3D5C3  — randen
 charcoal    #1C1C1C  — primaire tekst
 terracotta  #C0503A  — primaire accentkleur
 saffron     #D89B4A  — goud accent
-pine        #3C5A4E  — groen accent (accepteer-knoppen)
+pine        #3C5A4E  — groen accent
 ```
 
 ---
@@ -65,115 +66,97 @@ pine        #3C5A4E  — groen accent (accepteer-knoppen)
 
 ```
 Browser
-  ↕ (HTTP/WebSocket)
+  ↕ (HTTP)
 Vercel (Next.js 14 App Router)
   ├── Server Components  →  lezen direct uit Supabase via server-client
   ├── API Routes (/api)  →  schrijven + auth-acties via server-client
-  └── Client Components  →  Supabase browser-client voor realtime chat
+  └── Client Components  →  FlipCard (flip-animatie)
           ↕
 Supabase
   ├── Postgres-database
   ├── Auth (email + wachtwoord, zonder e-mailbevestiging)
-  ├── Storage (bucket 'photos' voor verhaalfoto's)
-  └── Realtime (postgres_changes op chat_messages + group_chat_messages)
+  └── Storage (bucket 'photos' voor verhaalfoto's)
 ```
 
 ### Authenticatie
 
-- Registratie gaat via `/api/auth/register` (server-side) met `supabase.auth.admin.createUser({ email_confirm: true })` om e-mailbevestiging te omzeilen — geen SMTP-server nodig.
-- Na registratie logt de browser direct in met `signInWithPassword`.
-- Sessie wordt bewaard in cookies via `@supabase/ssr`.
+Alleen nodig voor beheerders en de slapende groepen-functionaliteit. Registratie via `/api/auth/register` met `supabase.auth.admin.createUser({ email_confirm: true })` — geen SMTP nodig. Sessie via cookies met `@supabase/ssr`.
 
 ### Supabase-clients
 
-Er zijn twee clients:
-
 | Client | Sleutel | Gebruik |
 |---|---|---|
-| `getAuthClient()` | Anon key | Leest gebruikerssessie uit cookies; respecteert Row Level Security |
-| `getAdminClient()` | Service role key | Schrijf-acties (verhalen, groepen, uitnodigingen); omzeilt RLS |
+| `getAuthClient()` | Anon key | Leest gebruikerssessie uit cookies |
+| `getAdminClient()` | Service role key | Schrijf-acties, omzeilt RLS |
 
-Beide helpers zitten in `src/lib/supabase/api-helpers.ts`.
+Beide in `src/lib/supabase/api-helpers.ts`.
 
 ---
 
 ## Huidige functies
 
-### 1. Verhalen lezen
+### 1. Homepage — flip-kaarten
 
-- **Homepage** (`/`) — hero-sectie met uitgelicht verhaal + kaartenoverzicht.
-- **Verhalenlijst** (`/verhalen`) — alle goedgekeurde verhalen, filterbaar op Iran / Nederland / Alle.
-- **Verhaaldetail** (`/verhaal/[id]`) — full-bleed foto, redactionele tekst met drop cap, privébericht-knop, chatruimte.
+- Toont geanimeerde portretkaarten van alle goedgekeurde verhalen (subtiele zweef-animatie).
+- Klik op een kaart → 3D-flip-animatie, de achterkant toont de brief op gelinieerd papier.
+- Onderaan: pijl met "Overzicht" die naar `/verhalen` leidt.
 
-### 2. Verhaal indienen
+### 2. Verhaaldetailpagina (`/verhaal/[id]`)
 
-- Via `/deel` — formulier met voornaam, stad, land, tekst (max 500 woorden) en optionele foto.
-- Foto wordt geüpload naar Supabase Storage (`photos`-bucket).
-- Verhaal komt als `status: 'pending'` in de database — wacht op goedkeuring door beheerder.
+Drie secties, van boven naar onder:
 
-### 3. Account & authenticatie
+1. **Portret** — full-bleed foto met zwevende animatie en naam-overlay.
+2. **De brief** — verhaal op gelinieerd papier met rode kantlijn, drop-cap, datum en handtekening.
+3. **Brief van een kind** — reactief schrijven van een kind, op warm gelinieerd papier met andere stijl.
 
-- Registreren op `/auth/register` (naam, e-mail, wachtwoord).
-- Inloggen op `/auth/login`.
-- Sessie zichtbaar in navigatiebalk (avatar + naam + uitloggen-knop).
-- Geen e-mailbevestiging vereist (prototype-instelling).
+### 3. Verhalen indienen (`/deel`)
 
-### 4. Realtime chat per verhaal
+- Formulier: voornaam, stad, land, tekst (max 500 woorden), optionele foto.
+- Foto gaat naar Supabase Storage (`photos`-bucket).
+- Verhaal wordt als `status: 'pending'` opgeslagen — wacht op goedkeuring beheerder.
+- `child_letter` veld is beschikbaar maar wordt ingevuld door de redactie via het beheerderspaneel.
 
-- Zichtbaar onderaan elk verhaal.
-- Vereist inloggen — niet-ingelogde bezoekers zien een aanmeld-prompt.
-- Berichten staan als chatbubbels: eigen berichten rechts (terracotta), anderen links (zand).
-- Avatar gegenereerd uit initialen (deterministisch gekleurd).
-- Realtime via Supabase `postgres_changes`-subscription.
-- Klikbaar op naam van andere gebruiker → uitnodigingsmodal.
+### 4. Verhalenlijst (`/verhalen`)
 
-### 5. Groepen
+- Alle goedgekeurde verhalen in kaartformaat.
+- Filterbaar op Iran / Nederland / Alle.
 
-- Overzichtspagina op `/groepen` (vereist inloggen).
-- Groep aanmaken → maker wordt automatisch `admin`.
-- Uitnodigen via e-mailadres (door admin) of via klikbare naam in chat (uitnodigingsmodal).
-- Uitnodigingen ontvangen via `/groepen` — accepteren of weigeren.
-- **Notificatiebadge** op "Groepen" in de navigatiebalk: rood getal bij openstaande uitnodigingen (ververst elke 30 seconden).
+### 5. Community (`/groepen`)
 
-### 6. Groepschat
+- Eenvoudige pagina met link naar de Signal-community van Gezichten van Iran.
+- **Let op:** vervang de placeholder-URL `https://signal.group/#VERVANG_MET_ECHTE_LINK` in `src/app/groepen/page.tsx` door de echte Signal-group-link.
 
-- Toegankelijk via `/groepen/[id]`.
-- Realtime chatbubbels met avatars, timestamps en naam.
-- Ledenlijst in sidebar (aan/uit te zetten).
-- Admin kan extra leden uitnodigen via sidebar.
-
-### 7. QR-code tracking
+### 6. QR-code tracking
 
 - `/qr/home` — redirect naar homepage + registreert scan in `qr_scans`.
-- `/api/qr-scan` — alternatieve route voor per-verhaal QR-codes.
-- Statistieken zichtbaar in het beheerderspaneel.
+- Statistieken zichtbaar in beheerderspaneel.
 
-### 8. Beheerderspaneel
+### 7. Beheerderspaneel (`/admin`)
 
-- Toegankelijk op `/admin` (momenteel zonder inlogvereiste — zie [Beheerderspaneel](#beheerderspaneel)).
-- Inzien van scanstatistieken.
-- Homepage-QR-code genereren en downloaden als PNG.
 - Verhalen goedkeuren of afwijzen.
-- Per goedgekeurd verhaal: posterpagina met QR-code (`/admin/poster/[id]`).
+- QR-statistieken bekijken.
+- Homepage-QR genereren en downloaden.
+- Per verhaal: posterlink met QR-code.
 
 ---
 
 ## Database-schema
 
 ```sql
--- Verhalen
+-- Verhalen (inclusief kinderbrief)
 stories (
-  id          uuid PRIMARY KEY,
-  first_name  text NOT NULL,
-  city        text NOT NULL,
-  country     text NOT NULL,
-  story_text  text NOT NULL,
-  photo_url   text,
-  status      text DEFAULT 'pending',  -- 'pending' | 'approved' | 'rejected'
-  created_at  timestamptz
+  id            uuid PRIMARY KEY,
+  first_name    text NOT NULL,
+  city          text NOT NULL,
+  country       text NOT NULL,
+  story_text    text NOT NULL,
+  child_letter  text,               -- Brief van een kind (optioneel, redactie vult in)
+  photo_url     text,
+  status        text DEFAULT 'pending',  -- 'pending' | 'approved' | 'rejected'
+  created_at    timestamptz
 )
 
--- Privéberichten aan vertellers
+-- Privéberichten aan vertellers (via beheerderspaneel te lezen)
 messages (
   id           uuid PRIMARY KEY,
   story_id     uuid REFERENCES stories,
@@ -182,60 +165,31 @@ messages (
   created_at   timestamptz
 )
 
--- Chat per verhaal
-chat_messages (
-  id            uuid PRIMARY KEY,
-  story_id      uuid REFERENCES stories,
-  user_id       uuid,
-  display_name  text NOT NULL,
-  content       text NOT NULL,
-  created_at    timestamptz
-)
-
 -- QR-scan registraties
 qr_scans (
   id          uuid PRIMARY KEY,
   scanned_at  timestamptz,
-  source      text  -- 'homepage' | 'story' | etc.
+  source      text        -- 'homepage' | 'story' | etc.
+)
+
+-- ── Slapende groepen-structuur (klaar voor activatie) ──
+
+-- Gebruikers-chat per verhaal
+chat_messages (
+  id, story_id, user_id, display_name, content, created_at
 )
 
 -- Groepen
-groups (
-  id          uuid PRIMARY KEY,
-  name        text NOT NULL,
-  description text,
-  created_by  uuid,
-  created_at  timestamptz
-)
+groups (id, name, description, created_by, created_at)
 
 -- Groepsleden
-group_members (
-  id          uuid PRIMARY KEY,
-  group_id    uuid REFERENCES groups,
-  user_id     uuid,
-  role        text DEFAULT 'member',  -- 'admin' | 'member'
-  joined_at   timestamptz
-)
+group_members (id, group_id, user_id, role, joined_at)
 
 -- Groepsuitnodigingen
-group_invitations (
-  id              uuid PRIMARY KEY,
-  group_id        uuid REFERENCES groups,
-  invited_email   text NOT NULL,
-  invited_by      uuid,
-  status          text DEFAULT 'pending',  -- 'pending' | 'accepted' | 'rejected'
-  created_at      timestamptz
-)
+group_invitations (id, group_id, invited_email, invited_by, status, created_at)
 
 -- Groepschat
-group_chat_messages (
-  id            uuid PRIMARY KEY,
-  group_id      uuid REFERENCES groups,
-  user_id       uuid,
-  display_name  text NOT NULL,
-  content       text NOT NULL,
-  created_at    timestamptz
-)
+group_chat_messages (id, group_id, user_id, display_name, content, created_at)
 ```
 
 ---
@@ -247,148 +201,157 @@ group_chat_messages (
 | `GET` | `/api/stories` | Alle goedgekeurde verhalen |
 | `POST` | `/api/stories` | Verhaal indienen (multipart form) |
 | `POST` | `/api/admin/stories/[id]` | Verhaal goedkeuren of afwijzen |
-| `POST` | `/api/auth/register` | Gebruiker aanmaken (admin API, geen e-mail) |
-| `POST` | `/api/messages` | Privébericht versturen aan verteller |
-| `GET` | `/api/groups` | Groepen van ingelogde gebruiker |
-| `POST` | `/api/groups` | Nieuwe groep aanmaken |
-| `GET` | `/api/groups/[id]` | Groepdetails + ledenlijst |
-| `POST` | `/api/groups/[id]/invite` | Uitnodigen via e-mailadres |
-| `POST` | `/api/groups/[id]/invite-user` | Uitnodigen via user ID (vanuit chat) |
-| `GET` | `/api/groups/invitations` | Openstaande uitnodigingen voor ingelogde gebruiker |
-| `POST` | `/api/groups/invitations/[id]/respond` | Uitnodiging accepteren of weigeren |
-| `GET` | `/api/qr-scan` | QR-scan registreren (per verhaal) |
+| `POST` | `/api/auth/register` | Gebruiker aanmaken (admin API) |
+| `POST` | `/api/messages` | Privébericht aan verteller |
+| `GET` | `/api/qr-scan` | QR-scan registreren |
 | `GET` | `/qr/home` | Homepage QR-redirect + scan registreren |
+| *(slapend)* | `/api/groups/*` | Groepen-API (zie slapende code) |
 
 ---
 
 ## Omgevingsvariabelen
 
-Stel deze in via Vercel Dashboard → Project → Settings → Environment Variables.
+Stel in via Vercel Dashboard → Project → Settings → Environment Variables.
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...          # Alleen server-side, nooit NEXT_PUBLIC_
 NEXT_PUBLIC_SITE_URL=https://gezichten-van-iran.vercel.app
 ```
-
-> **Let op:** De `SUPABASE_SERVICE_ROLE_KEY` is gevoelig — stel hem alleen in als server-side omgevingsvariabele (geen `NEXT_PUBLIC_` prefix).
 
 ---
 
 ## Lokaal opstarten
 
 ```bash
-# 1. Kloon de repo
 git clone https://github.com/LukasLanghout/gezichten-van-iran.git
 cd gezichten-van-iran
-
-# 2. Installeer dependencies
 npm install
 
-# 3. Maak .env.local aan
-cp .env.example .env.local
-# Vul de vier variabelen in (zie boven)
+# Maak .env.local aan en vul de vier variabelen in
+cp .env.example .env.local   # of maak het bestand handmatig
 
-# 4. Start de dev-server
 npm run dev
 # → http://localhost:3000
 ```
-
-> Er is geen lokale Supabase-setup nodig — de dev-omgeving praat direct met het productie-Supabase-project. Gebruik eventueel `supabase start` voor echte lokale isolatie.
 
 ---
 
 ## Beheerderspaneel
 
-Momenteel is `/admin` **zonder inlogvereiste** (uitgeschakeld voor prototype-testen). De admin-loginpagina bestaat op `/admin/login` maar wordt niet afgedwongen.
-
-**Voor productie moet je dit opnieuw inschakelen:**
+Momenteel **zonder inlogvereiste** (uitgeschakeld voor prototype-testen). Voor productie:
 
 1. Open `src/app/admin/page.tsx` en `src/app/admin/poster/[id]/page.tsx`.
 2. Zet de auth-check terug:
    ```ts
-   const supabase = createClient()
    const { data: { user } } = await supabase.auth.getUser()
    if (!user) redirect('/admin/login')
    ```
-3. Zorg dat de admin-gebruiker in Supabase Auth bestaat (e-mail: naar keuze, wachtwoord: naar keuze).
+3. Zorg voor een admin-account in Supabase Auth.
+
+### Kinderbrief toevoegen aan een verhaal
+
+Voer direct SQL uit in Supabase (Dashboard → SQL Editor):
+```sql
+UPDATE stories
+SET child_letter = 'Lieve [naam], ...'
+WHERE id = '[uuid van het verhaal]';
+```
+
+Of voeg een invoerveld toe aan het beheerderspaneel in `src/app/admin/page.tsx`.
+
+---
+
+## Slapende code (voor later)
+
+De volledige **groepen-app** is bewaard in de codebase maar niet actief in de navigatie.  
+Dit kan later worden geactiveerd als in-app community ter vervanging van de Signal-link.
+
+**Wat er al is:**
+- API-routes: `/api/groups/*`, `/api/groups/invitations/*`
+- Pagina's: `src/app/groepen/[id]/page.tsx` (groepschat)
+- Componenten: `GroupChat.tsx`, `InviteToGroupModal.tsx`, `GroupsNavLink.tsx`, `Avatar.tsx`
+- Database-tabellen: `groups`, `group_members`, `group_invitations`, `group_chat_messages`
+- Auth-systeem: register/login volledig werkend
+
+**Om het te activeren:**
+1. Vervang `src/app/groepen/page.tsx` door de groepen-overzichtspagina (zie git-history).
+2. Vervang de "Community"-link in `Nav.tsx` door `<GroupsNavLink />` (toont badge bij uitnodigingen).
+3. Voeg chat per verhaal terug toe in `src/app/verhaal/[id]/page.tsx` (`<Chat storyId={...} />`).
 
 ---
 
 ## Mogelijke uitbreidingen
 
-Hieronder staan ideeën die logisch passen bij wat er al is, geordend van makkelijk naar complex.
-
-### Klein (1–4 uur)
+### Snel (1–4 uur)
 
 | Idee | Toelichting |
 |---|---|
-| **E-mailbevestiging aanzetten** | In Supabase: Authentication → Email → schakel in. Verwijder `email_confirm: true` uit de register-route en stel SMTP in (bijv. Resend.com). |
-| **Admin-inlog verplichten** | Zie sectie hierboven — twee regels code terug. |
-| **Zoekbalk op /verhalen** | Voeg een tekstveld toe dat filtert op `first_name` of `city` via `.ilike()`. |
-| **Deelknop per verhaal** | Kopieer URL naar klembord of open native share-API (`navigator.share()`). |
-| **Leesaantal bijhouden** | Voeg kolom `views int default 0` toe aan `stories` en increment bij elke paginabezoek. |
-| **Meer QR-bronnen tracken** | Voeg `source`-parameter toe aan de `/qr/home`-route voor locatie-specifieke QR-codes (bijv. `/qr/home?source=Amsterdam-Centraal`). |
+| **Signal-link bijwerken** | Vervang placeholder in `src/app/groepen/page.tsx` |
+| **Kinderbrief-veld in admin** | Voeg textarea toe aan beheerderspaneel zodat redactie brieven kan schrijven zonder SQL |
+| **Admin-inlog aanzetten** | Twee regels code — zie beheerderspaneel-sectie hierboven |
+| **Meer QR-bronnen tracken** | Voeg `source`-parameter toe aan `/qr/home` voor locatie-specifieke QR-codes |
+| **Deelknop per verhaal** | `navigator.share()` of kopieer URL naar klembord |
 
 ### Gemiddeld (een dag)
 
 | Idee | Toelichting |
 |---|---|
-| **Reacties op verhalen** | Voeg `likes`-tabel toe (story_id + user_id, uniek). Toon hartje-knop met teller. |
-| **Moderatie-e-mails** | Stuur de beheerder een e-mail bij nieuw ingediend verhaal via een Supabase Edge Function of Resend. |
-| **Profielpagina** | `/profiel/[id]` — toon naam, avatar, verhalen en groepen van een gebruiker. |
-| **Notificaties in-app** | Tabel `notifications` (user_id, type, payload, read) + badge in nav. Stuur bij nieuwe chatberichten, groepsuitnodigingen, etc. |
-| **Groep verlaten** | Knop in groepspagina om jezelf uit `group_members` te verwijderen. |
-| **Afbeeldingen optimaliseren** | Resize foto's via Supabase Edge Function bij upload (bijv. naar max 1200px breed). |
+| **Audiobrieven** | Voeg `audio_url` toe aan `stories` en embed een audiospeler |
+| **Videoportretten** | Vervang de foto-animatie door een korte looping video (Supabase Storage) |
+| **Meer talen** | `next-intl` voor NL + EN, verhalen blijven in originele taal |
+| **Moderatie-e-mails** | Supabase Edge Function + Resend.com bij nieuw ingediend verhaal |
+| **Kinderbrief-formulier** | Apart inzendformulier voor kinderen/scholen met moderatieflow |
 
 ### Groot (meerdere dagen)
 
 | Idee | Toelichting |
 |---|---|
-| **Meertaligheid (i18n)** | Voeg Engels toe met `next-intl`. Vertalingen voor UI, verhalen blijven in originele taal. |
-| **Geavanceerde moderatie** | Admin-dashbord met bulk-acties, zoeken op naam/stad, e-maillog van afgewezen verhalen. |
-| **Audio/video verhalen** | Voeg `media_url` en `media_type` toe aan `stories`. Embed audiospeler of video. |
-| **Publieke groepen** | Voeg `is_public boolean` toe aan `groups`. Gebruikers kunnen zelf lid worden zonder uitnodiging. |
-| **PWA / offline** | Voeg `manifest.json` toe en een Service Worker voor offline lezen van goedgekeurde verhalen. |
-| **Analytics-dashboard** | Vervang de simpele QR-teller door een volledige grafiek (bijv. met Recharts) — scans per dag, per bron, per verhaal. |
-| **CMS-integratie** | Vervang het hand-gemaakte admin-paneel door Sanity of Payload CMS zodat redacteuren verhalen rijker kunnen opmaken. |
-| **Row Level Security** | Voeg RLS-policies toe aan Supabase zodat gebruikers alleen hun eigen data kunnen lezen/schrijven — momenteel niet geconfigureerd. |
+| **In-app community** | Activeer de slapende groepen-code (zie boven) als vervanging voor Signal |
+| **Schoolproject-module** | Klassenregistratie + kinderbrieven per klas beheren |
+| **Analytics-dashboard** | Grafieken van scans per dag, per locatie, per verhaal (Recharts) |
+| **PWA / offline** | `manifest.json` + Service Worker voor offline lezen |
+| **Row Level Security** | RLS-policies in Supabase zodat gebruikers alleen eigen data lezen/schrijven |
 
 ---
 
-## Projectstructuur (kort)
+## Projectstructuur
 
 ```
 src/
 ├── app/
 │   ├── admin/          Beheerderspaneel (verhalen, QR, posters)
-│   ├── api/            Alle API-routes
+│   ├── api/            Alle API-routes (incl. slapende groepen-routes)
 │   ├── auth/           Login & registratie
 │   ├── deel/           Verhaal indienen
-│   ├── groepen/        Groepen + groepschat
-│   ├── verhaal/[id]    Verhaaldetailpagina + chat
+│   ├── groepen/
+│   │   ├── page.tsx    Signal-community-pagina (actief)
+│   │   └── [id]/       Groepschat (slapend, code bewaard)
+│   ├── verhaal/[id]    Portret + brief + kinderbrief
 │   ├── verhalen/       Verhalenlijst met filter
 │   ├── qr/             QR-redirect routes
-│   └── page.tsx        Homepage
+│   └── page.tsx        Homepage met flip-kaarten
 ├── components/
-│   ├── Avatar.tsx      Gekleurde initials-avatar
-│   ├── AuthButton.tsx  Login/logout in navigatie
-│   ├── Chat.tsx        Realtime chat per verhaal
-│   ├── Footer.tsx      Sitefooter
-│   ├── GroupChat.tsx   Realtime groepschat
-│   ├── GroupsNavLink.tsx Groepen-link met uitnodigingsbadge
-│   ├── InviteToGroupModal.tsx Modal om iemand uit te nodigen
-│   ├── Nav.tsx         Navigatiebalk
-│   └── StoryCard.tsx   Verhaalkaart in overzicht
+│   ├── Avatar.tsx           Gekleurde initialen-avatar (slapend)
+│   ├── AuthButton.tsx       Login/logout in navigatie
+│   ├── Chat.tsx             Realtime chat per verhaal (slapend)
+│   ├── FlipCard.tsx         3D flip-kaart voor homepage ← nieuw
+│   ├── Footer.tsx           Sitefooter
+│   ├── GroupChat.tsx        Realtime groepschat (slapend)
+│   ├── GroupsNavLink.tsx    Groepen-link met badge (slapend)
+│   ├── InviteToGroupModal.tsx Uitnodigingsmodal (slapend)
+│   ├── Nav.tsx              Navigatiebalk
+│   └── StoryCard.tsx        Verhaalkaart voor /verhalen
 └── lib/
     └── supabase/
-        ├── api-helpers.ts  getAuthClient() + getAdminClient()
-        ├── client.ts       Browser Supabase-client
-        └── server.ts       Server Supabase-client
+        ├── api-helpers.ts   getAuthClient() + getAdminClient()
+        ├── client.ts        Browser Supabase-client
+        └── server.ts        Server Supabase-client
 supabase/
 └── migrations/
-    └── 001_initial.sql   Volledige database-setup + seed-data
+    ├── 001_initial.sql      Volledige database-setup + seed-data
+    └── 002_child_letters.sql Kinderbrief-kolom + seed kinderbrieven
 ```
 
 ---
