@@ -8,13 +8,19 @@ export async function GET() {
 
   const admin = getAdminClient()
   const { data: memberRows } = await admin
-    .from('group_members').select('group_id').eq('user_id', user.id)
+    .from('group_members').select('group_id, role').eq('user_id', user.id)
 
   const groupIds = memberRows?.map(r => r.group_id) || []
   if (groupIds.length === 0) return NextResponse.json([])
 
   const { data: groups } = await admin.from('groups').select('*').in('id', groupIds)
-  return NextResponse.json(groups || [])
+
+  const groupsWithRole = groups?.map(g => ({
+    ...g,
+    role: memberRows?.find(m => m.group_id === g.id)?.role || 'member',
+  }))
+
+  return NextResponse.json(groupsWithRole || [])
 }
 
 export async function POST(request: NextRequest) {
