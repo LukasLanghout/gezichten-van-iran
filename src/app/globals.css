@@ -1,9 +1,85 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
   background-color: #F8F5F0;
   color: #1C1C1C;
+  text-rendering: optimizeLegibility;
+}
+
+/* Subtle paper texture behind everything */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(216,155,74,0.07), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(192,80,58,0.06), transparent 60%);
+}
+
+/* Refined, slim scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(28,28,28,0.18) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(28,28,28,0.18);
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(28,28,28,0.32);
+}
+
+@layer components {
+  /* Editorial drop cap for long-form story text */
+  .dropcap::first-letter {
+    float: left;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 700;
+    font-size: 4.2rem;
+    line-height: 0.82;
+    padding: 0.1rem 0.6rem 0 0;
+    color: #C0503A;
+  }
+
+  /* Primary action button */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 bg-terracotta text-white font-semibold rounded-full
+           shadow-soft transition-all duration-200 hover:bg-terracotta-dark hover:-translate-y-0.5
+           active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-charcoal/15 bg-paper/60
+           font-medium transition-all duration-200 hover:border-terracotta hover:text-terracotta;
+  }
+
+  /* Form field */
+  .field {
+    @apply w-full rounded-xl border border-charcoal/15 bg-paper px-4 py-2.5 text-charcoal
+           placeholder:text-charcoal/35 transition-all duration-200
+           focus:border-terracotta focus:outline-none focus:ring-4 focus:ring-terracotta/10;
+  }
+
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-terracotta;
+  }
 }

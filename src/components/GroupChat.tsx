@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import Avatar from './Avatar'
 import type { User } from '@supabase/supabase-js'
 
 interface Message {
@@ -70,27 +71,37 @@ export default function GroupChat({ groupId, currentUser }: { groupId: string; c
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-5 pr-1 mb-4" style={{ maxHeight: '60vh' }}>
+      <div className="mb-4 flex-1 space-y-4 overflow-y-auto pr-1" style={{ maxHeight: '60vh' }}>
         {messages.length === 0 && (
-          <p className="text-charcoal/40 text-sm">Nog geen berichten. Stuur het eerste bericht!</p>
-        )}
-        {messages.map(msg => (
-          <div key={msg.id}>
-            {/* Name + timestamp */}
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className={`font-semibold text-sm ${
-                msg.user_id === currentUser.id ? 'text-terracotta' : 'text-charcoal'
-              }`}>
-                {msg.display_name}
-              </span>
-              <span className="text-xs text-charcoal/40">{timeAgo(msg.created_at)}</span>
-            </div>
-            {/* Message content */}
-            <p className="text-sm text-charcoal leading-relaxed">{msg.content}</p>
+          <div className="rounded-2xl border border-dashed border-charcoal/15 py-10 text-center">
+            <p className="text-sm text-charcoal/45">Nog geen berichten. Stuur het eerste bericht!</p>
           </div>
-        ))}
+        )}
+        {messages.map(msg => {
+          const own = msg.user_id === currentUser.id
+          return (
+            <div key={msg.id} className={`flex animate-fade-in gap-3 ${own ? 'flex-row-reverse' : ''}`}>
+              <Avatar name={msg.display_name} size={36} />
+              <div className={`flex max-w-[80%] flex-col ${own ? 'items-end text-right' : ''}`}>
+                <div className={`mb-1 flex items-baseline gap-2 ${own ? 'flex-row-reverse' : ''}`}>
+                  <span className={`text-sm font-semibold ${own ? 'text-terracotta' : 'text-charcoal'}`}>
+                    {msg.display_name}
+                  </span>
+                  <span className="text-[11px] text-charcoal/35">{timeAgo(msg.created_at)}</span>
+                </div>
+                <div
+                  className={`inline-block rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                    own ? 'rounded-tr-sm bg-terracotta text-white' : 'rounded-tl-sm bg-sand text-ink'
+                  }`}
+                >
+                  {msg.content}
+                </div>
+              </div>
+            </div>
+          )
+        })}
         <div ref={bottomRef} />
       </div>
 
@@ -100,13 +111,13 @@ export default function GroupChat({ groupId, currentUser }: { groupId: string; c
           value={input}
           onChange={e => setInput(e.target.value)}
           placeholder="Schrijf een bericht..."
-          className="flex-1 border border-charcoal/20 px-3 py-2 bg-white text-sm"
+          className="field flex-1 rounded-full"
           maxLength={1000}
         />
         <button
           type="submit"
           disabled={sending || !input.trim()}
-          className="bg-terracotta text-white px-5 py-2 text-sm font-semibold hover:bg-terracotta/90 disabled:opacity-40"
+          className="btn-primary px-6 py-2.5 text-sm"
         >
           Sturen
         </button>

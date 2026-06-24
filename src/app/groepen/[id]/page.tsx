@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Nav from '@/components/Nav'
+import Avatar from '@/components/Avatar'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import GroupChat from '@/components/GroupChat'
@@ -55,46 +56,58 @@ export default function GroepDetailPage() {
 
   const isAdmin = members.find(m => m.user_id === currentUser?.id)?.role === 'admin'
 
-  if (loading) return <><Nav /><main className="max-w-5xl mx-auto px-4 py-12 text-charcoal/50">Laden...</main></>
+  if (loading) {
+    return (
+      <>
+        <Nav />
+        <main className="mx-auto max-w-5xl px-4 py-8">
+          <div className="h-8 w-56 animate-pulse rounded-lg bg-charcoal/5" />
+          <div className="mt-6 h-[60vh] animate-pulse rounded-3xl bg-charcoal/5" />
+        </main>
+      </>
+    )
+  }
 
   return (
     <>
       <Nav />
-      <main className="max-w-5xl mx-auto px-4 py-6">
+      <main className="mx-auto max-w-5xl px-4 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <Link href="/groepen" className="text-sm text-charcoal/50 hover:text-terracotta">← Groepen</Link>
-            <h1 className="font-serif text-3xl font-bold mt-1">{group?.name}</h1>
-            {group?.description && <p className="text-charcoal/60 text-sm mt-1">{group.description}</p>}
+            <Link href="/groepen" className="text-sm font-medium text-charcoal/50 transition-colors hover:text-terracotta">← Groepen</Link>
+            <h1 className="mt-1 font-serif text-3xl font-bold md:text-4xl">{group?.name}</h1>
+            {group?.description && <p className="mt-1 text-sm text-charcoal/60">{group.description}</p>}
           </div>
           <button
             onClick={() => setShowMembers(!showMembers)}
-            className="flex items-center gap-2 border border-charcoal/20 px-4 py-2 text-sm hover:border-charcoal transition-colors"
+            className="flex shrink-0 items-center gap-2 rounded-full border border-charcoal/15 bg-paper/60 px-4 py-2 text-sm font-medium transition-colors hover:border-terracotta hover:text-terracotta"
           >
-            <span>{members.length} leden</span>
+            <span className="flex h-2 w-2 rounded-full bg-pine" />
+            {members.length} leden
           </button>
         </div>
 
         <div className="flex gap-6">
           {/* Chat — main column */}
-          <div className="flex-1 bg-white rounded-sm shadow-sm p-6">
-            <h2 className="font-serif text-xl font-bold mb-6 pb-4 border-b border-charcoal/10">Groepschat</h2>
+          <div className="flex-1 rounded-3xl border border-charcoal/5 bg-paper p-6 shadow-card">
+            <h2 className="mb-6 border-b border-charcoal/10 pb-4 font-serif text-xl font-bold">Groepschat</h2>
             {currentUser && <GroupChat groupId={id} currentUser={currentUser} />}
           </div>
 
           {/* Sidebar: members + invite */}
           {showMembers && (
-            <aside className="w-64 shrink-0 space-y-4">
-              <div className="bg-white rounded-sm shadow-sm p-4">
-                <h3 className="font-semibold mb-3">Leden</h3>
-                <div className="space-y-2">
+            <aside className="w-72 shrink-0 animate-fade-in space-y-4">
+              <div className="rounded-2xl border border-charcoal/5 bg-paper p-5 shadow-card">
+                <h3 className="mb-4 font-semibold">Leden</h3>
+                <div className="space-y-3">
                   {members.map(member => (
-                    <div key={member.user_id} className="flex justify-between items-center">
-                      <div>
-                        <p className="text-sm font-semibold">{member.display_name}</p>
+                    <div key={member.user_id} className="flex items-center gap-3">
+                      <Avatar name={member.display_name} size={34} />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold">{member.display_name}</p>
                         {member.role === 'admin' && (
-                          <span className="text-xs text-terracotta">Beheerder</span>
+                          <span className="text-xs font-medium text-terracotta">Beheerder</span>
                         )}
                       </div>
                     </div>
@@ -103,22 +116,22 @@ export default function GroepDetailPage() {
               </div>
 
               {isAdmin && (
-                <div className="bg-white rounded-sm shadow-sm p-4">
-                  <h3 className="font-semibold mb-3">Uitnodigen</h3>
-                  <form onSubmit={invite} className="space-y-2">
+                <div className="rounded-2xl border border-charcoal/5 bg-paper p-5 shadow-card">
+                  <h3 className="mb-3 font-semibold">Uitnodigen</h3>
+                  <form onSubmit={invite} className="space-y-2.5">
                     <input
                       type="email"
                       required
                       value={inviteEmail}
                       onChange={e => setInviteEmail(e.target.value)}
                       placeholder="E-mailadres"
-                      className="w-full border border-charcoal/20 px-3 py-2 bg-white text-sm"
+                      className="field text-sm"
                     />
-                    <button type="submit" disabled={inviting} className="w-full bg-terracotta text-white py-2 text-sm font-semibold hover:bg-terracotta/90 disabled:opacity-50">
+                    <button type="submit" disabled={inviting} className="btn-primary w-full py-2 text-sm">
                       {inviting ? 'Versturen...' : 'Uitnodiging sturen'}
                     </button>
                     {inviteMsg && (
-                      <p className={`text-xs ${inviteMsg.includes('!') ? 'text-green-600' : 'text-red-500'}`}>{inviteMsg}</p>
+                      <p className={`text-xs ${inviteMsg.includes('!') ? 'text-pine' : 'text-terracotta'}`}>{inviteMsg}</p>
                     )}
                   </form>
                 </div>
